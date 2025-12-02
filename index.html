@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT: AGARTHA</title>
+    <style>
+        :root {
+            --glass-bg: rgba(200, 225, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --primary-blue: #00f2ff;
+            --deep-blue: #007AFF;
+            --text-glow: 0 0 10px rgba(0, 242, 255, 0.5);
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            /* Deep polar/oceanic gradient */
+            background: linear-gradient(180deg, #020024 0%, #090979 35%, #00d4ff 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Ambient Ice Fog Animation */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://raw.githubusercontent.com/h5bp/html5-boilerplate/master/dist/tile.png'); /* Just a texture placeholder or remove */
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border-radius: 28px;
+            z-index: 10;
+        }
+
+        header {
+            width: 85%;
+            margin-top: 30px;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 { 
+            font-weight: 800; 
+            letter-spacing: 4px; 
+            font-size: 1.5rem; 
+            text-shadow: var(--text-glow);
+            margin: 0;
+            font-style: italic;
+        }
+        
+        .badge { 
+            background: rgba(0, 242, 255, 0.2); 
+            border: 1px solid var(--primary-blue);
+            color: var(--primary-blue);
+            padding: 6px 16px; 
+            border-radius: 20px; 
+            font-size: 0.7rem; 
+            font-weight: bold; 
+            box-shadow: 0 0 10px var(--primary-blue);
+        }
+
+        /* Main Interface */
+        main {
+            flex-grow: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 25px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* The "Portal" Upload Area */
+        .portal-container {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            border: 4px solid rgba(255,255,255,0.1);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: rgba(0,0,0,0.2);
+        }
+
+        .portal-container:hover { 
+            border-color: var(--primary-blue); 
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.6);
+            transform: scale(1.02); 
+        }
+        
+        #targetImg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .upload-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            opacity: 0.8;
+            pointer-events: none;
+            color: var(--primary-blue);
+            text-shadow: 0 0 5px black;
+        }
+
+        #fileInput { display: none; }
+
+        /* Status Line */
+        #statusText {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: white;
+            opacity: 0.8;
+            height: 20px;
+        }
+
+        /* Grid of Buttons */
+        .grid-menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 90%;
+            max-width: 420px;
+        }
+
+        .action-btn {
+            padding: 25px 20px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 242, 255, 0.2);
+        }
+
+        .action-btn:active { transform: scale(0.98); }
+        
+        .action-btn h3 { 
+            margin: 0 0 8px 0; 
+            font-size: 1rem; 
+            font-weight: 600;
+        }
+        
+        .action-btn p { 
+            margin: 0; 
+            font-size: 0.7rem; 
+            opacity: 0.7; 
+        }
+
+        /* Overlay for Gags */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 10, 30, 0.9);
+            backdrop-filter: blur(15px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .polar-scan {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            border-radius: 50%;
+            border-top: 2px solid var(--primary-blue);
+            animation: radarSpin 2s infinite linear;
+            box-shadow: inset 0 0 20px var(--primary-blue);
+            display: none;
+        }
+
+        @keyframes radarSpin { 0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);} }
+
+        /* Floating Heads Animation */
+        .floater {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            pointer-events: none;
+            border: 2px solid var(--primary-blue);
+            box-shadow: 0 0 15px var(--primary-blue);
+            animation: floatAnim 4s ease-in-out infinite;
+            z-index: 5;
+        }
+
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(15deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="glass">
+        <h1>AGARTHA</h1>
+        <span class="badge">GATEWAY: OPEN</span>
+    </header>
+
+    <main>
+        <div class="portal-container glass" onclick="document.getElementById('fileInput').click()">
+            <div class="polar-scan" id="scanEffect"></div>
+            <img id="targetImg" src="" alt="Target">
+            <div class="upload-text" id="uploadPrompt">
+                INITIATE<br>IMAGE UPLOAD
+            </div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*">
+
+        <div id="statusText">WAITING FOR SURFACE INPUT...</div>
+
+        <div class="grid-menu">
+            <div class="action-btn glass" onclick="runGag('physiognomy')">
+                <h3>Physiognomy</h3>
+                <p>Analyze Cranial Structure</p>
+            </div>
+            <div class="action-btn glass" onclick="runGag('spirit')">
+                <h3>Spirit Check</h3>
+                <p>Detect Inner Light</p>
+            </div>
+            <div class="action-btn glass" onclick="runGag('origins')">
+                <h3>Origins</h3>
+                <p>Trace Geographic Roots</p>
+            </div>
+            <div class="action-btn glass" onclick="runGag('ascend')">
+                <h3>Ascension</h3>
+                <p>Enter The Core</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="overlay">
+        <h1 id="overlayTitle" style="font-size: 2rem; margin-bottom: 20px; letter-spacing: 5px; text-shadow: 0 0 15px white;">PROCESSING</h1>
+        <div id="overlayContent"></div>
+        <button class="glass" style="padding: 12px 40px; margin-top: 40px; color: white; cursor: pointer; border-color: var(--primary-blue); font-weight: bold;" onclick="closeOverlay()">RETURN</button>
+    </div>
+
+    <script>
+        let uploadedImageSrc = null;
+
+        // Image Upload Logic
+        const fileInput = document.getElementById('fileInput');
+        const targetImg = document.getElementById('targetImg');
+        const uploadPrompt = document.getElementById('uploadPrompt');
+        const scanEffect = document.getElementById('scanEffect');
+        const statusText = document.getElementById('statusText');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    uploadedImageSrc = event.target.result;
+                    targetImg.src = uploadedImageSrc;
+                    targetImg.style.display = 'block';
+                    uploadPrompt.style.display = 'none';
+                    scanEffect.style.display = 'block';
+                    statusText.innerText = "SUBJECT IDENTIFIED. READY FOR SCAN.";
+                    statusText.style.color = "#00f2ff";
+                    statusText.style.textShadow = "0 0 10px #00f2ff";
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Gag Functions
+        function runGag(type) {
+            if (!uploadedImageSrc) {
+                statusText.innerText = "ERROR: IMAGE REQUIRED";
+                statusText.style.color = "red";
+                setTimeout(() => statusText.style.color = "white", 1000);
+                return;
+            }
+
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('overlayTitle');
+            const content = document.getElementById('overlayContent');
+            
+            overlay.style.display = 'flex';
+            content.innerHTML = ''; // Reset
+
+            if (type === 'physiognomy') {
+                title.innerText = "MEASURING SKULL...";
+                content.innerHTML = `
+                    <div style="position:relative; width: 200px; height: 200px;">
+                        <img src="${uploadedImageSrc}" style="width:100%; height:100%; border-radius:50%; object-fit:cover; opacity: 0.5;">
+                        <div style="position:absolute; top:0; left:0; width:100%; height:100%; border: 2px dashed red; border-radius:50%; animation: pulse 1s infinite;"></div>
+                    </div>
+                `;
+                setTimeout(() => {
+                    title.innerText = "ANALYSIS COMPLETE";
+                    content.innerHTML += `<h2 style="color:#ff4444; margin-top:20px; font-size: 1.5rem;">RESULT: SOY BASED</h2>`;
+                }, 2500);
+            } 
+            else if (type === 'spirit') {
+                title.innerText = "CALCULATING AURA...";
+                let power = 1000;
+                const counter = document.createElement('h1');
+                counter.style.fontSize = "4rem";
+                counter.style.fontFamily = "monospace";
+                content.appendChild(counter);
+                
+                let interval = setInterval(() => {
+                    power -= 13;
+                    counter.innerText = power;
+                    if(power < 50) {
+                        clearInterval(interval);
+                        title.innerText = "SPIRIT LEVEL";
+                        counter.style.color = "#ff4444";
+                        counter.innerText = "NPC DETECTED";
+                    }
+                }, 30);
+            }
+            else if (type === 'origins') {
+                title.innerText = "TRACING ROOTS...";
+                content.innerHTML = `<h2 style="font-size: 5rem; animation: spin 3s infinite linear;">🌍</h2>`;
+                setTimeout(() => {
+                    title.innerText = "ORIGIN FOUND";
+                    content.innerHTML = `
+                        <img src="${uploadedImageSrc}" style="width:100px; border-radius:50%; border:3px solid white;">
+                        <h2>CONFIRMED: SURFACE DWELLER</h2>
+                        <p style="opacity:0.7">NOT ELIGIBLE FOR ENTRY</p>
+                    `;
+                }, 2000);
+            }
+            else if (type === 'ascend') {
+                overlay.style.display = 'none';
+                initiateAscension();
+            }
+        }
+
+        function initiateAscension() {
+            document.body.style.background = "black";
+            statusText.innerText = "REALITY COLLAPSING...";
+            statusText.style.color = "red";
+            
+            // Spawn rapid fire images
+            let count = 0;
+            let swarm = setInterval(() => {
+                let img = document.createElement('img');
+                img.src = uploadedImageSrc;
+                img.className = 'floater';
+                img.style.left = Math.random() * window.innerWidth + 'px';
+                img.style.top = Math.random() * window.innerHeight + 'px';
+                img.style.width = (Math.random() * 100 + 50) + 'px'; // Random size
+                img.style.height = img.style.width;
+                img.style.animationDuration = (Math.random() * 2 + 0.5) + 's';
+                document.body.appendChild(img);
+                
+                count++;
+                if(count > 50) {
+                    clearInterval(swarm);
+                    setTimeout(() => {
+                         alert("SYSTEM CRASH // RETURN TO SURFACE");
+                         location.reload();
+                    }, 1000);
+                }
+            }, 100);
+        }
+
+        function closeOverlay() {
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // CSS Injection for animations
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes pulse { 0% {transform: scale(0.95); opacity: 0.5;} 50% {transform: scale(1.05); opacity: 1;} 100% {transform: scale(0.95); opacity: 0.5;} }
+            @keyframes spin { 100% { transform: rotate(360deg); } }
+        `;
+        document.head.appendChild(style);
+
+    </script>
+</body>
+</html>
